@@ -20,7 +20,7 @@ public class ImageProcessor{
 		return null;
 	}
 
-	public double[][] getMask(int width, int height, float sigma){
+	public double[][] getMask(int width, int height, double sigma){
 		double[][] mask = new double[width][height];
 
 		float total = 0;
