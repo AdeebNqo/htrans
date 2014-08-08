@@ -17,6 +17,19 @@ public class ImageProcessor{
 	public BufferedImage GaussianBlur(BufferedImage img){
 		int w = img.getWidth();
 		int h = img.getHeight();
+		
+		//retrieving the pixel values from the image
+		double[][] pixels = new double[w][h];
+		for (int i=0; i<w; ++i){
+			for (int j=0; j<h; ++j){
+				pixels[i][j] = img.getRGB(i,j);
+			}
+		}
+
+		/*
+		Applying the filter
+		*/
+		
 		return null;
 	}
 
