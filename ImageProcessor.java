@@ -19,7 +19,7 @@ public class ImageProcessor{
 	public ImageProcessor(){
 
 	}
-
+	//input img is in grey scale?
 	public BufferedImage SobelOperator(BufferedImage img, int boundaryextension){
 		int w = img.getWidth();
 		int h = img.getHeight();
@@ -44,26 +44,120 @@ public class ImageProcessor{
 			{-1, -2, -1}
 		};
 		//applying Gx, Gy and then returning the resulting img
-		return createImage(w, h, Convolute(Gy, w, h, Convolute(Gx, w, h, pixels, boundaryextension), boundaryextension));
+		return createImage(w, h, Convolute(Gx, Gy, w, h, pixels, boundaryextension));
 	}
 	/*
 
-	Method for applying convolution to image
+	Method for applying convolution to image using two masks
 
-	@args mask Array of values that make up mask
+	@args Gx Array of values that make up mask, x direction
+	@args Gy Array of values that make up mask, y direction
 	@args iwidth Image width
 	@args iheight Image height
 	@args img Pixel array of image
 	@args boundaryextension Boundary extension scheme (SYMETRIC | PERIODIC | ZERO | CONTINUATION)
 
 	*/
-	private int[][] Convolute(int[][] mask, int iwidth, int iheight, int[][] img, int boundaryextension){
-		for (int x=0; x<iwidth; ++x){
-			for (int y=0; y<iheight; ++y){
+	private int[][] Convolute(int[][] Gx, int[][] Gy, int iwidth, int iheight, int[][] img, int boundaryextension){
+		for (int y=0; y<iheight; ++y){
+			for (int x=0; x<iwidth; ++x){
+				//x direction
+				int sum = 0; //var to hold mask*img sum
+				for (int my=0; my<3; ++my){
+					for (int mx=0; mx<3; ++mx){
+						int pixelval = (int) Double.POSITIVE_INFINITY;
+						if (y+my >= iheight && x+mx >= iwidth){
+							//boundary extension
+							if (boundaryextension==ImageProcessor.ZERO){
+								pixelval = 0;
+							}
+							else if(boundaryextension==ImageProcessor.CONTINUATION){
+								pixelval = img[iwidth-1][iheight-1];
+							}
+							else if (boundaryextension==ImageProcessor.PERIODIC){
+								pixelval = img[(x+mx)%iwidth][(y+my)%iheight];
+							}
+						}
+						else if (x+mx >= iwidth){
+							//boundary extension
+							if (boundaryextension==ImageProcessor.ZERO){
+								pixelval = 0;
+							}
+							else if(boundaryextension==ImageProcessor.CONTINUATION){
+								pixelval = img[iwidth-1][y+my];
+							}
+							else if (boundaryextension==ImageProcessor.PERIODIC){
+								pixelval = img[(x+mx)%iwidth][y+my];
+							}
 
+						}else if (y+my >= iheight){
+							//boundary extension
+							if (boundaryextension==ImageProcessor.ZERO){
+								pixelval = 0;
+							}
+							else if(boundaryextension==ImageProcessor.CONTINUATION){
+								pixelval = img[x+mx][iheight-1];
+							}
+							else if (boundaryextension==ImageProcessor.PERIODIC){
+								pixelval = img[x+mx][(y+my)%iheight];
+							}
+						}else{
+							pixelval = img[x+mx][y+my];
+						}
+						sum += (pixelval & 0xff) * Gx[mx][my];
+					}
+				}
+				img[x][y] = 0xff000000 | ((int)sum << 16 | (int)sum << 8 | (int)sum);
+
+				//y direction
+				sum = 0; //var to hold mask*img sum
+				for (int my=0; my<3; ++my){
+					for (int mx=0; mx<3; ++mx){
+						int pixelval = (int) Double.POSITIVE_INFINITY;
+						if (y+my >= iheight && x+mx >= iwidth){
+							//boundary extension
+							if (boundaryextension==ImageProcessor.ZERO){
+								pixelval = 0;
+							}
+							else if(boundaryextension==ImageProcessor.CONTINUATION){
+								pixelval = img[iwidth-1][iheight-1];
+							}
+							else if (boundaryextension==ImageProcessor.PERIODIC){
+								pixelval = img[(x+mx)%iwidth][(y+my)%iheight];
+							}
+						}
+						else if (x+mx >= iwidth){
+							//boundary extension
+							if (boundaryextension==ImageProcessor.ZERO){
+								pixelval = 0;
+							}
+							else if(boundaryextension==ImageProcessor.CONTINUATION){
+								pixelval = img[iwidth-1][y+my];
+							}
+							else if (boundaryextension==ImageProcessor.PERIODIC){
+								pixelval = img[(x+mx)%iwidth][y+my];
+							}
+						}else if (y+my >= iheight){
+							//boundary extension
+							if (boundaryextension==ImageProcessor.ZERO){
+								pixelval = 0;
+							}
+							else if(boundaryextension==ImageProcessor.CONTINUATION){
+								pixelval = img[x+mx][iheight-1];
+							}
+							else if (boundaryextension==ImageProcessor.PERIODIC){
+								pixelval = img[x+mx][(y+my)%iheight];
+							}
+						}else{
+							pixelval = img[x+mx][y+my];
+						}
+						sum += (pixelval & 0xff) * Gy[mx][my];
+					}
+				}
+				img[x][y] = 0xff000000 | ((int)sum << 16 | (int)sum << 8 | (int)sum);
 			}
 		}
-		return null;
+		return img;
 	}
 
 	/*
