@@ -175,6 +175,7 @@ public class ImageProcessor{
 				}
 			}
 		}
+
 		float ratio=(float)maxmagnitude/255;
 		int pixelsum = 0;
 		for(int y=0; y<iheight; ++y) {
