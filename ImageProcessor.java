@@ -32,7 +32,6 @@ public class ImageProcessor{
 			}
 		}
 
-
 		double[] mask = get1dMask(kernelsize ,sigma);
 		/*
 
@@ -95,6 +94,7 @@ public class ImageProcessor{
 				pixels[i][j] = (int) pixelproductsum;
 			}
 		}
+	//	printArray(w, h, pixels);
 		return createImage(w, h, pixels);
 	}
 
@@ -119,12 +119,19 @@ public class ImageProcessor{
 	}
 	public double[] get1dMask(int kernelsize, double sigma){
 			double[] mask = new double[kernelsize];
-			float total = 0;
+			double total = 0;
 			for(int x=0; x<kernelsize; ++x){
 				double power = (Math.pow(x, 2)) / (2*Math.pow(sigma, 2));
-				mask[x] = (1/2*Math.PI*Math.pow(sigma, 2))*Math.exp(-power);
+				//System.err.println("numerator: "+(Math.pow(x, 2)));
+				//System.err.println("denomenator: "+(2*Math.pow(sigma, 2)));
+				//System.err.println("power: "+power);
+				mask[x] = (1/Math.sqrt(2*Math.PI*Math.pow(sigma, 2)))*Math.exp(-power);
+				//System.err.println("exponential: "+Math.exp(-power));
+				//System.err.println("exponential multiplier: "+(1/(Math.sqrt(2*Math.PI*Math.pow(sigma, 2)))));
 				total += mask[x];
+				//System.err.println("["+mask[x]+"]");
 			}
+			//System.err.println("total: "+total);
 			for (int x=0; x<kernelsize; ++x){
 				mask[x] = mask[x] / total ;
 			}
@@ -143,5 +150,18 @@ public class ImageProcessor{
 			}
 		}
 		return img;
+	}
+	/*
+
+	Print array
+
+	*/
+	public void printArray(int width, int height, int[][] pixelvalues){
+		for (int x=0; x<width; ++x){
+			for(int y=0; y<height; ++y){
+				System.err.print("["+pixelvalues[x][y]+"]");
+			}
+			System.err.println();
+		}
 	}
 }
