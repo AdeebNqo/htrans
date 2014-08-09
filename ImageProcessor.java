@@ -33,32 +33,38 @@ public class ImageProcessor{
 		}
 
 		//sobel kernels
-		int[][] Gx = {
+		int[][] Mx = {
 			{-1, 0, 1},
 			{-2, 0, 2},
 			{-1, 0, 1}
 		};
-		int[][] Gy = {
+		int[][] My = {
 			{1, 2, 1},
 			{0, 0, 0},
 			{-1, -2, -1}
 		};
-		//applying Gx, Gy and then returning the resulting img
-		return createImage(w, h, Convolute(Gx, Gy, w, h, pixels, boundaryextension));
+		//applying Mx, My and then returning the resulting img
+		return createImage(w, h, Convolute(Mx, My, w, h, pixels, boundaryextension));
 	}
 	/*
 
 	Method for applying convolution to image using two masks
 
-	@args Gx Array of values that make up mask, x direction
-	@args Gy Array of values that make up mask, y direction
+	@args Mx Array of values that make up mask, x direction
+	@args My Array of values that make up mask, y direction
 	@args iwidth Image width
 	@args iheight Image height
 	@args img Pixel array of image
 	@args boundaryextension Boundary extension scheme (SYMETRIC | PERIODIC | ZERO | CONTINUATION)
 
 	*/
-	private int[][] Convolute(int[][] Gx, int[][] Gy, int iwidth, int iheight, int[][] img, int boundaryextension){
+	private int[][] Convolute(int[][] Mx, int[][] My, int iwidth, int iheight, int[][] img, int boundaryextension){
+
+		//vertical and horizontal gradient
+		int[][] Gx = new int[iwidth][iheight];
+		int[][] Gy = new int[iwidth][iheight];
+
+		//calculating gradients
 		for (int y=0; y<iheight; ++y){
 			for (int x=0; x<iwidth; ++x){
 				//x direction
@@ -104,10 +110,10 @@ public class ImageProcessor{
 						}else{
 							pixelval = img[x+mx][y+my];
 						}
-						sum += (pixelval & 0xff) * Gx[mx][my];
+						sum += (pixelval & 0xff) * Mx[mx][my];
 					}
 				}
-				img[x][y] = 0xff000000 | ((int)sum << 16 | (int)sum << 8 | (int)sum);
+				Gx[x][y] = sum; //0xff000000 | ((int)sum << 16 | (int)sum << 8 | (int)sum);
 
 				//y direction
 				sum = 0; //var to hold mask*img sum
@@ -151,10 +157,30 @@ public class ImageProcessor{
 						}else{
 							pixelval = img[x+mx][y+my];
 						}
-						sum += (pixelval & 0xff) * Gy[mx][my];
+						sum += (pixelval & 0xff) * My[mx][my];
 					}
 				}
-				img[x][y] = 0xff000000 | ((int)sum << 16 | (int)sum << 8 | (int)sum);
+				Gy[x][y] = sum; //0xff000000 | ((int)sum << 16 | (int)sum << 8 | (int)sum);
+			}
+		}
+
+		int[][] magnitude = new int[iwidth][iheight];
+		int maxmagnitude = 0;
+		//calculating magnitude of edges
+		for (int y=0; y<iheight; ++y){
+			for (int x=0; x<iwidth; ++x){
+				magnitude[x][y] = (int) Math.sqrt(Math.pow(Gx[x][y], 2) + Math.pow(Gx[x][y], 2));
+				if (magnitude[x][y] > maxmagnitude){
+					maxmagnitude = magnitude[x][y];
+				}
+			}
+		}
+		float ratio=(float)maxmagnitude/255;
+		int pixelsum = 0;
+		for(int y=0; y<iheight; ++y) {
+			for(int x=0; x<iwidth; ++x) {
+				pixelsum=(int)(magnitude[x][y]/ratio);
+				img[x][y] = 0xff000000 | ((int)pixelsum << 16 | (int)pixelsum << 8 | (int)pixelsum);
 			}
 		}
 		return img;
