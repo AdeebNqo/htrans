@@ -14,7 +14,7 @@ public class ImageProcessor{
 
 	}
 
-	public BufferedImage GaussianBlur(BufferedImage img){
+	public BufferedImage GaussianBlur(BufferedImage img, int kernelsize,double sigma){
 		int w = img.getWidth();
 		int h = img.getHeight();
 
@@ -27,14 +27,16 @@ public class ImageProcessor{
 		}
 
 		/*
-		Applying the filter
+
+		Applying the filter -- that is applying the dot product
+
 		*/
+		double[] mask = get1dMask(kernelsize ,sigma);
 
 		return null;
 	}
 
-	public double[][] getMask(int width, int height, double sigma){
-		if (height !=0 && width != 0){
+	public double[][] get2dMask(int width, int height, double sigma){
 			double[][] mask = new double[width][height];
 
 			float total = 0;
@@ -52,21 +54,18 @@ public class ImageProcessor{
 				}
 			}
 			return mask;
-		}
-		else{
-			int nonzeroval = height==0? width:height;
-			double[] mask = new double[nonzeroval];
-
+	}
+	public double[] get1dMask(int kernelsize, double sigma){
+			double[] mask = new double[kernelsize];
 			float total = 0;
-			for(int x=0; x<nonzeroval; ++x){
-				double power = (Math.pow(x, 2))) / (2*Math.pow(sigma, 2));
+			for(int x=0; x<kernelsize; ++x){
+				double power = (Math.pow(x, 2)) / (2*Math.pow(sigma, 2));
 				mask[x] = (1/2*Math.PI*Math.pow(sigma, 2))*Math.exp(-power);
 				total += mask[x];
 			}
-			for (int x=0; x<width; ++x){
+			for (int x=0; x<kernelsize; ++x){
 				mask[x] = mask[x] / total ;
 			}
 			return mask;
-		}
 	}
 }
