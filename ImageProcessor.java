@@ -65,6 +65,36 @@ public class ImageProcessor{
 				pixels[i][j] = (int) pixelproductsum;
 			}
 		}
+		/*
+
+		Applying the filter -- that is applying the dot product
+
+		y-direction
+		*/
+		for (int i=0; i<w; ++i){ //running through width
+			for (int j=0; j<h; ++j){ //running through height
+				double pixelproductsum = 0.0;
+				for (int maskindex=0; maskindex<kernelsize; ++maskindex){
+					double pixelval = Double.POSITIVE_INFINITY;
+					if (maskindex+j >= h){
+						//boundary extension
+						if (boundaryextension==ImageProcessor.ZERO){
+							pixelval = 0;
+						}
+						else if(boundaryextension==ImageProcessor.CONTINUATION){
+							pixelval = pixels[i][h-1];
+						}
+						else if (boundaryextension==ImageProcessor.PERIODIC){
+							pixelval = pixels[i][(maskindex+j)%h];
+						}
+					}else{
+						pixelval = pixels[i][maskindex+j];
+					}
+					pixelproductsum += mask[maskindex]*pixelval;
+				}
+				pixels[i][j] = (int) pixelproductsum;
+			}
+		}
 		return createImage(w, h, pixels);
 	}
 
