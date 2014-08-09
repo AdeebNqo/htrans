@@ -17,7 +17,7 @@ public class Driver{
 			File img0 = new File(args[0]);
 			BufferedImage img = ImageIO.read(img0);
 			ImageProcessor imgprocessor = new ImageProcessor();
-
+			saveImage(imgprocessor.GaussianBlur(img , 6, 2, ImageProcessor.CONTINUATION), "editlena.png","png");
 		}catch(Exception e){
 			e.printStackTrace();
 		}
