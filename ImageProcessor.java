@@ -20,7 +20,7 @@ public class ImageProcessor{
 
 	}
 
-	public BufferedImage SobelOperator(BufferedImage img){
+	public BufferedImage SobelOperator(BufferedImage img, int boundaryextension){
 		int w = img.getWidth();
 		int h = img.getHeight();
 
@@ -44,13 +44,37 @@ public class ImageProcessor{
 			{-1, -2, -1}
 		};
 		//applying Gx, Gy and then returning the resulting img
-		return createImage(w, h, Convolute(Gy, w, h, Convolute(Gx, w, h, pixels)));
+		return createImage(w, h, Convolute(Gy, w, h, Convolute(Gx, w, h, pixels, boundaryextension), boundaryextension));
 	}
-	private int[][] Convolute(int[][] mask, int width, int height, int[][] img){
+	/*
 
+	Method for applying convolution to image
+
+	@args mask Array of values that make up mask
+	@args iwidth Image width
+	@args iheight Image height
+	@args img Pixel array of image
+	@args boundaryextension Boundary extension scheme (SYMETRIC | PERIODIC | ZERO | CONTINUATION)
+
+	*/
+	private int[][] Convolute(int[][] mask, int iwidth, int iheight, int[][] img, int boundaryextension){
+		for (int x=0; x<iwidth; ++x){
+			for (int y=0; y<iheight; ++y){
+
+			}
+		}
 		return null;
 	}
 
+	/*
+
+	Method for applying Gaussian blur
+
+	@args img Pixel array of image
+	@args kernelsize Width of kernel as it's always 1d
+	@args sigma Sigma value for Gaussian function
+	@args boundaryextension Boundary extension scheme (SYMETRIC | PERIODIC | ZERO | CONTINUATION)
+	*/
 	public BufferedImage GaussianBlur(BufferedImage img, int kernelsize, double sigma, int boundaryextension){
 		int w = img.getWidth();
 		int h = img.getHeight();
@@ -67,8 +91,8 @@ public class ImageProcessor{
 		/*
 
 		Applying the filter -- that is applying the dot product
-
 		x-direction
+
 		*/
 		for (int j=0; j<h; ++j){ //running through height
 			for (int i=0; i<w; ++i){ //running through width
@@ -100,8 +124,8 @@ public class ImageProcessor{
 		/*
 
 		Applying the filter -- that is applying the dot product
-
 		y-direction
+
 		*/
 		for (int i=0; i<w; ++i){ //running through width
 			for (int j=0; j<h; ++j){ //running through height
@@ -132,7 +156,14 @@ public class ImageProcessor{
 		//printArray(w, h, pixels);
 		return createImage(w, h, pixels);
 	}
+	/*
 
+	Method for calculating 2d Gaussian mask
+
+	@args width Width of kernel
+	@args height Height of kernel
+	@args sigma Sigma value for Gaussian function
+	*/
 	public double[][] get2dMask(int width, int height, double sigma){
 			double[][] mask = new double[width][height];
 
@@ -152,21 +183,21 @@ public class ImageProcessor{
 			}
 			return mask;
 	}
+	/*
+
+	Method for calculating 1d Gaussian mask
+
+	@args kernelsize Width of kernel
+	@args sigma Sigma value for Gaussian function
+	*/
 	public double[] get1dMask(int kernelsize, double sigma){
 			double[] mask = new double[kernelsize];
 			double total = 0;
 			for(int x=0; x<kernelsize; ++x){
 				double power = (Math.pow(x, 2)) / (2*Math.pow(sigma, 2));
-				//System.err.println("numerator: "+(Math.pow(x, 2)));
-				//System.err.println("denomenator: "+(2*Math.pow(sigma, 2)));
-				//System.err.println("power: "+power);
 				mask[x] = (1/Math.sqrt(2*Math.PI*Math.pow(sigma, 2)))*Math.exp(-power);
-				//System.err.println("exponential: "+Math.exp(-power));
-				//System.err.println("exponential multiplier: "+(1/(Math.sqrt(2*Math.PI*Math.pow(sigma, 2)))));
 				total += mask[x];
-				//System.err.println("["+mask[x]+"]");
 			}
-			//System.err.println("total: "+total);
 			for (int x=0; x<kernelsize; ++x){
 				mask[x] = mask[x] / total ;
 			}
@@ -176,6 +207,9 @@ public class ImageProcessor{
 
 	Method for converting pixel array into an image
 
+	@args width Width of image
+	@args height Height of image
+	@args pixelvalues Pixel array of image
 	*/
 	public BufferedImage createImage(int width, int height, int[][] pixelvalues){
 		BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -188,10 +222,13 @@ public class ImageProcessor{
 	}
 	/*
 
-	Print array
+	Print array - fordebugging
 
+	@args width Width of image
+	@args height Height of image
+	@args pixelvalues Pixel array of image
 	*/
-	public void printArray(int width, int height, int[][] pixelvalues){
+	private void printArray(int width, int height, int[][] pixelvalues){
 		for (int x=0; x<width; ++x){
 			for(int y=0; y<height; ++y){
 				System.err.print("["+pixelvalues[x][y]+"]");
