@@ -17,7 +17,7 @@ public class Driver{
 			File img0 = new File(args[0]);
 			BufferedImage img = ImageIO.read(img0);
 			ImageProcessor imgprocessor = new ImageProcessor();
-			saveImage(imgprocessor.GaussianBlur(img , 10, 3, ImageProcessor.PERIODIC), "result.png","png");
+			saveImage(imgprocessor.GaussianBlur(img , 4, 2, ImageProcessor.PERIODIC), "result.png","png");
 		}catch(Exception e){
 			e.printStackTrace();
 		}

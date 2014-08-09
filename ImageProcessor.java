@@ -43,7 +43,7 @@ public class ImageProcessor{
 			for (int i=0; i<w; ++i){ //running through width
 				double pixelproductsum = 0.0;
 				for (int maskindex=0; maskindex<kernelsize; ++maskindex){
-					double pixelval = Double.POSITIVE_INFINITY;
+					int pixelval = (int) Double.POSITIVE_INFINITY;
 					if (maskindex+i >= w){
 						//boundary extension
 						if (boundaryextension==ImageProcessor.ZERO){
@@ -59,9 +59,11 @@ public class ImageProcessor{
 					}else{
 						pixelval = pixels[maskindex+i][j];
 					}
-					pixelproductsum += mask[maskindex]*pixelval;
+					pixelproductsum += mask[maskindex]*(pixelval & 0xff);
+					//pixelproductsum += mask[maskindex]*pixelval;
 				}
-				pixels[i][j] = (int) pixelproductsum;
+				//pixels[i][j] = (int)pixelproductsum;
+				pixels[i][j] = 0xff000000 | ((int)pixelproductsum << 16 | (int)pixelproductsum << 8 | (int)pixelproductsum);
 			}
 		}
 		/*
@@ -74,7 +76,7 @@ public class ImageProcessor{
 			for (int j=0; j<h; ++j){ //running through height
 				double pixelproductsum = 0.0;
 				for (int maskindex=0; maskindex<kernelsize; ++maskindex){
-					double pixelval = Double.POSITIVE_INFINITY;
+					int pixelval = (int) Double.POSITIVE_INFINITY;
 					if (maskindex+j >= h){
 						//boundary extension
 						if (boundaryextension==ImageProcessor.ZERO){
@@ -89,9 +91,11 @@ public class ImageProcessor{
 					}else{
 						pixelval = pixels[i][maskindex+j];
 					}
-					pixelproductsum += mask[maskindex]*pixelval;
+					pixelproductsum += mask[maskindex]*(pixelval & 0xff);
+					//pixelproductsum += mask[maskindex]*pixelval;
 				}
-				pixels[i][j] = (int) pixelproductsum;
+				//pixels[i][j] = (int)pixelproductsum;
+				pixels[i][j] = 0xff000000 | ((int)pixelproductsum << 16 | (int)pixelproductsum << 8 | (int)pixelproductsum);
 			}
 		}
 		//printArray(w, h, pixels);
@@ -146,7 +150,7 @@ public class ImageProcessor{
 		BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		for (int x=0; x<width; ++x){
 			for(int y=0; y<height; ++y){
-				img.setRGB(x, y, pixelvalues[x][y]);
+				img.setRGB(x, y, (int) pixelvalues[x][y]);
 			}
 		}
 		return img;
