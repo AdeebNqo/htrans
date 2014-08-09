@@ -20,6 +20,37 @@ public class ImageProcessor{
 
 	}
 
+	public BufferedImage SobelOperator(BufferedImage img){
+		int w = img.getWidth();
+		int h = img.getHeight();
+
+		//retrieving the pixel values from the image
+		int[][] pixels = new int[w][h];
+		for (int i=0; i<w; ++i){
+			for (int j=0; j<h; ++j){
+				pixels[i][j] = img.getRGB(i,j);
+			}
+		}
+
+		//sobel kernels
+		int[][] Gx = {
+			{-1, 0, 1},
+			{-2, 0, 2},
+			{-1, 0, 1}
+		};
+		int[][] Gy = {
+			{1, 2, 1},
+			{0, 0, 0},
+			{-1, -2, -1}
+		};
+		//applying Gx, Gy and then returning the resulting img
+		return createImage(w, h, Convolute(Gy, w, h, Convolute(Gx, w, h, pixels)));
+	}
+	private int[][] Convolute(int[][] mask, int width, int height, int[][] img){
+
+		return null;
+	}
+
 	public BufferedImage GaussianBlur(BufferedImage img, int kernelsize, double sigma, int boundaryextension){
 		int w = img.getWidth();
 		int h = img.getHeight();
