@@ -94,7 +94,7 @@ public class ImageProcessor{
 				pixels[i][j] = (int) pixelproductsum;
 			}
 		}
-	//	printArray(w, h, pixels);
+		//printArray(w, h, pixels);
 		return createImage(w, h, pixels);
 	}
 
