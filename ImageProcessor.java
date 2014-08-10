@@ -365,7 +365,7 @@ public class ImageProcessor{
 
 	@args img The image to be processed
 	*/
-	public BufferedImage CircleHough(BufferedImage img){
+	public BufferedImage CircleHough(BufferedImage img, BufferedImage origimg){
 		int w = img.getWidth();
 		int h = img.getHeight();
 
@@ -388,81 +388,94 @@ public class ImageProcessor{
 			}
 		}
 
+		int votes = 0;
+		int threshold = -16000000;
 		//voting
 		double radian = -1;
 		int a, b;
 		System.err.println("Voting!");
 		for (int y=0; y<h; ++y){
 			for (int x=0; x<w; ++x){
-				if ((pixels[x][y] & 0xff) == 255) { 
+				//System.out.print("["+(pixels[x][y])+"]");
+				//if ((pixels[x][y] & 0xff) == 255) {
+				if (pixels[x][y] < threshold){
+					pixels[x][y] = -16777216;
+				}
+				if (pixels[x][y] != -16777216){
+					//System.out.print("0");
 					for (int theta=0; theta<360; ++theta){
-						for (int r=0; r<rmax; ++r){
+						for (int r=1; r<rmax; ++r){
 							radian = (theta * Math.PI) / 180;
 							a = (int)Math.round(x - r * Math.cos(radian));
 							b = (int)Math.round(y - r * Math.sin(radian));
 							if (a > 0 && a < w && b > 0 && b < h){ //if center is in picture
 								//doing the actual vote
-								accumulator[r][x][y] += 1;
+								accumulator[r][a][b] += 1;
+								++votes;
 							}
 						}
 					}
+				}else{
+					//System.out.print("1");
 				}
 			}
+			System.out.print("\r"+(int)((y/(double)h)*100)+"%");
 		}
-
-
-		int threshold = 5;
+		System.err.println();
+		System.err.println("Drawing lines!");
+		int thresholdx = 110;
 		for (int ax=0; ax<w; ++ax){
 			for (int bx=0; bx<h; ++bx){
 				for (int r=0; r<rmax; ++r){
-					if (accumulator[r][ax][bx] > threshold){
+					if (accumulator[r][ax][bx] > thresholdx && r%20 == 0){
+
 						int x = r, y = 0;
 						int radiusError = 1-x;
 						while(x >= y){
 							try{
-								img.setRGB(x + ax, y + bx,120);
-							}
-							catch(ArrayIndexOutOfBoundsException e){
-
-							}
-							try{							
-								img.setRGB(y + ax, x + bx,120);
+								origimg.setRGB(x + ax, y + bx,180);
 							}
 							catch(ArrayIndexOutOfBoundsException e){
 
 							}
 							try{
-								img.setRGB(-x + ax, y + bx,120);
+								origimg.setRGB(y + ax, x + bx,180);
 							}
 							catch(ArrayIndexOutOfBoundsException e){
 
 							}
 							try{
-							img.setRGB(-y + ax, x + bx, 120);
+								origimg.setRGB(-x + ax, y + bx,180);
 							}
 							catch(ArrayIndexOutOfBoundsException e){
 
 							}
 							try{
-							img.setRGB(-x + ax, -y + bx, 120);
+								origimg.setRGB(-y + ax, x + bx, 180);
 							}
 							catch(ArrayIndexOutOfBoundsException e){
 
 							}
 							try{
-							img.setRGB(-y + ax, -x + bx,120);
+								origimg.setRGB(-x + ax, -y + bx, 180);
 							}
 							catch(ArrayIndexOutOfBoundsException e){
 
 							}
 							try{
-							img.setRGB(x + ax, -y + bx, 120);
+								origimg.setRGB(-y + ax, -x + bx,180);
 							}
 							catch(ArrayIndexOutOfBoundsException e){
 
 							}
 							try{
-							img.setRGB(y + ax, -x + bx,120);
+								origimg.setRGB(x + ax, -y + bx, 180);
+							}
+							catch(ArrayIndexOutOfBoundsException e){
+
+							}
+							try{
+								origimg.setRGB(y + ax, -x + bx,180);
 							}
 							catch(ArrayIndexOutOfBoundsException e){
 
@@ -480,6 +493,6 @@ public class ImageProcessor{
 				}
 			}
 		}
-		return img;
+		return origimg;
 	}
 }
