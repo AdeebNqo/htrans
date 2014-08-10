@@ -8,6 +8,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt
 
 */
 import java.awt.image.BufferedImage;
+import java.awt.Color;
 public class ImageProcessor{
 
 	//boundary extension options
@@ -352,10 +353,133 @@ public class ImageProcessor{
 	private void printArray(int width, int height, int[][] pixelvalues){
 		for (int x=0; x<width; ++x){
 			for(int y=0; y<height; ++y){
-				System.err.print("["+pixelvalues[x][y]+"]");
+				System.out.print("["+pixelvalues[x][y]+"]");
 			}
-			System.err.println();
+			System.out.println();
 		}
 	}
 
+	/*
+
+	Method for drawing finding circles on picture using Hough Transform
+
+	@args img The image to be processed
+	*/
+	public BufferedImage CircleHough(BufferedImage img){
+		int w = img.getWidth();
+		int h = img.getHeight();
+
+		//retrieving the pixel values from the image
+		int[][] pixels = new int[w][h];
+		for (int i=0; i<w; ++i){
+			for (int j=0; j<h; ++j){
+				pixels[i][j] = img.getRGB(i,j);
+			}
+		}
+
+		//getting maximum radius of circle
+		int rmax = (int) Math.sqrt( Math.pow(w, 2) + Math.pow(h,2) );
+		int[][][] accumulator = new int[rmax][w][h];
+		for (int i=0; i< rmax; ++i){
+			for (int j=0; j<w; ++j){
+				for (int k=0; k<h; ++k){
+					accumulator[i][j][k] = 0;
+				}
+			}
+		}
+
+		//voting
+		double radian = -1;
+		int a, b;
+		System.err.println("Voting!");
+		for (int y=0; y<h; ++y){
+			for (int x=0; x<w; ++x){
+				if (((pixels[x][y] & 0xff) == 255)){ //min contrast
+					for (int theta=0; theta<360; ++theta){
+						for (int r=0; r<rmax; ++r){
+							radian = (theta * Math.PI) / 180;
+							a = (int)Math.round(x - r * Math.cos(radian));
+							b = (int)Math.round(y - r * Math.sin(radian));
+							if (a > 0 && a < w && b > 0 && b < h){ //if center is in picture
+								//doing the actual vote
+								accumulator[r][a][b] += 1;
+							}
+						}
+					}
+				}
+			}
+		}
+		int threshold = 5;
+		for (int ax=0; ax<w; ++ax){
+			for (int bx=0; bx<h; ++bx){
+				for (int r=0; r<rmax; ++r){
+					if (accumulator[r][ax][bx] > threshold){
+						//System.err.println("center: ("+ax+","+ bx+"), radius: "+r);
+
+						int x = r, y = 0;
+						int radiusError = 1-x;
+						while(x >= y){
+							try{
+								img.setRGB(x + ax, y + bx,120);
+							}
+							catch(ArrayIndexOutOfBoundsException e){
+
+							}
+							try{							
+								img.setRGB(y + ax, x + bx,120);
+							}
+							catch(ArrayIndexOutOfBoundsException e){
+
+							}
+							try{
+								img.setRGB(-x + ax, y + bx,120);
+							}
+							catch(ArrayIndexOutOfBoundsException e){
+
+							}
+							try{
+							img.setRGB(-y + ax, x + bx, 120);
+							}
+							catch(ArrayIndexOutOfBoundsException e){
+
+							}
+							try{
+							img.setRGB(-x + ax, -y + bx, 120);
+							}
+							catch(ArrayIndexOutOfBoundsException e){
+
+							}
+							try{
+							img.setRGB(-y + ax, -x + bx,120);
+							}
+							catch(ArrayIndexOutOfBoundsException e){
+
+							}
+							try{
+							img.setRGB(x + ax, -y + bx, 120);
+							}
+							catch(ArrayIndexOutOfBoundsException e){
+
+							}
+							try{
+							img.setRGB(y + ax, -x + bx,120);
+							}
+							catch(ArrayIndexOutOfBoundsException e){
+
+							}
+							y++;
+							if (radiusError<0){
+								radiusError += 2 * y + 1;
+							}
+							else{
+								x--;
+								radiusError += 2 * (y - x + 1);
+							}
+						}
+					}
+				}
+			}
+		}
+		return img;
+	}
 }
