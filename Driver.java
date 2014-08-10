@@ -51,7 +51,7 @@ public class Driver{
 			JLabel picLabel3 = new JLabel(new ImageIcon(imgprocessor.SobelOperator(imgprocessor.GaussianBlur(img , 4, 2, ImageProcessor.PERIODIC), ImageProcessor.PERIODIC)));
 			pan3.add(picLabel3);
 			//original
-			JLabel picLabel4 = new JLabel(new ImageIcon(imgprocessor.CircleHough(imgprocessor.SobelOperator(img, ImageProcessor.PERIODIC))));
+			JLabel picLabel4 = new JLabel(new ImageIcon(imgprocessor.CircleHough(imgprocessor.SobelOperator(imgprocessor.GaussianBlur(img , 4, 2, ImageProcessor.PERIODIC), ImageProcessor.PERIODIC))));
 			pan4.add(picLabel4);
 
 			frame.pack();

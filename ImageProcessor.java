@@ -394,7 +394,7 @@ public class ImageProcessor{
 		System.err.println("Voting!");
 		for (int y=0; y<h; ++y){
 			for (int x=0; x<w; ++x){
-				if (((pixels[x][y] & 0xff) == 255)){ //min contrast
+				if ((pixels[x][y] & 0xff) == 255) { 
 					for (int theta=0; theta<360; ++theta){
 						for (int r=0; r<rmax; ++r){
 							radian = (theta * Math.PI) / 180;
@@ -402,20 +402,20 @@ public class ImageProcessor{
 							b = (int)Math.round(y - r * Math.sin(radian));
 							if (a > 0 && a < w && b > 0 && b < h){ //if center is in picture
 								//doing the actual vote
-								accumulator[r][a][b] += 1;
+								accumulator[r][x][y] += 1;
 							}
 						}
 					}
 				}
 			}
 		}
+
+
 		int threshold = 5;
 		for (int ax=0; ax<w; ++ax){
 			for (int bx=0; bx<h; ++bx){
 				for (int r=0; r<rmax; ++r){
 					if (accumulator[r][ax][bx] > threshold){
-						//System.err.println("center: ("+ax+","+ bx+"), radius: "+r);
-
 						int x = r, y = 0;
 						int radiusError = 1-x;
 						while(x >= y){
