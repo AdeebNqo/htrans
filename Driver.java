@@ -40,8 +40,8 @@ public class Driver{
 			BufferedImage img = ImageIO.read(img0);
 			ImageProcessor imgprocessor = new ImageProcessor();
 
-			int gaussernelsize = 5;
-			int gausssigma = 5;
+			int gaussernelsize = 2;
+			int gausssigma = 3;
 
 			//original
 			JLabel picLabel1 = new JLabel(new ImageIcon(img));

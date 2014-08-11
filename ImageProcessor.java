@@ -9,6 +9,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt
 */
 import java.awt.image.BufferedImage;
 import java.awt.Color;
+import java.awt.Graphics2D;
 public class ImageProcessor{
 
 	//boundary extension options
@@ -388,23 +389,29 @@ public class ImageProcessor{
 			}
 		}
 
+		int maxvote = 0;
 		int votes = 0;
 		int threshold = -16000000;
-		//voting
+		/*
+
+		voting
+
+		*/
 		double radian = -1;
 		int a, b;
 		System.err.println("Voting!");
+		int maxradius = 0;
 		for (int y=0; y<h; ++y){
 			for (int x=0; x<w; ++x){
 				//System.out.print("["+(pixels[x][y])+"]");
 				//if ((pixels[x][y] & 0xff) == 255) {
 				if (pixels[x][y] < threshold){
-					pixels[x][y] = -16777216;
+					pixels[x][y] = -16777216; //make it equal to background
 				}
 				if (pixels[x][y] != -16777216){
 					//System.out.print("0");
 					for (int theta=0; theta<360; ++theta){
-						for (int r=1; r<rmax; ++r){
+						for (int r=0; r<rmax; ++r){
 							radian = (theta * Math.PI) / 180;
 							a = (int)Math.round(x - r * Math.cos(radian));
 							b = (int)Math.round(y - r * Math.sin(radian));
@@ -412,6 +419,12 @@ public class ImageProcessor{
 								//doing the actual vote
 								accumulator[r][a][b] += 1;
 								++votes;
+								if (accumulator[r][a][b] > maxvote){
+									maxvote = accumulator[r][a][b];
+								}
+								if (r > maxradius){
+									maxradius = r;
+								}
 							}
 						}
 					}
@@ -423,71 +436,59 @@ public class ImageProcessor{
 		}
 		System.err.println();
 		System.err.println("Drawing lines!");
-		int thresholdx = 110;
+		System.err.println("max radius is "+maxradius+", rmax: "+rmax);
+
+		//int numcircles = 10;
+		//int[] circlevals = new int[numcircles*30];
+
+		int thresholdx = 10;//maxvote;
 		for (int ax=0; ax<w; ++ax){
 			for (int bx=0; bx<h; ++bx){
-				for (int r=0; r<rmax; ++r){
-					if (accumulator[r][ax][bx] > thresholdx && r%20 == 0){
+				for (int r=maxradius; r>=0; --r){
+					if (accumulator[r][ax][bx] >= thresholdx){
+						/*
+						for (int x=0; x<w; ++x){
+							for(int y=0; y<h; ++y){
+								if (Math.pow(x-ax, 2)+Math.pow(y-bx, 2) == Math.pow(r, 2)){
+									//System.err.println("("+x+"-"+ax+")^2+("+y+"-"+bx+")^2="+r+"^2");
+									origimg.setRGB(x, y, 255);
+								}
+							}
+						}*/
 
-						int x = r, y = 0;
-						int radiusError = 1-x;
-						while(x >= y){
-							try{
-								origimg.setRGB(x + ax, y + bx,180);
+						//comparing pixel with Von Neuman neighbours
+						int maxax = ax;
+						int maxbx = bx;
+						try{
+							if (accumulator[r][ax+1][bx] > accumulator[r][maxax][maxbx]){
+								maxax = ax+1;
+								maxbx = bx;
 							}
-							catch(ArrayIndexOutOfBoundsException e){
+						}catch(Exception e){}
+						try{
+							if (accumulator[r][ax][bx+1] > accumulator[r][maxax][maxbx]){
+								maxax = ax;
+								maxbx = bx+1;
+							}
+						}catch(Exception e){}
+						try{
+							if (accumulator[r][ax-1][bx] > accumulator[r][maxax][maxbx]){
+								maxax = ax-1;
+								maxbx = bx;
+							}
+						}catch(Exception e){}
+						try{
+							if (accumulator[r][ax][bx-1] > accumulator[r][maxax][maxbx]){
+								maxax = ax;
+								maxbx = bx-1;
+							}
+						}catch(Exception e){}
 
-							}
-							try{
-								origimg.setRGB(y + ax, x + bx,180);
-							}
-							catch(ArrayIndexOutOfBoundsException e){
-
-							}
-							try{
-								origimg.setRGB(-x + ax, y + bx,180);
-							}
-							catch(ArrayIndexOutOfBoundsException e){
-
-							}
-							try{
-								origimg.setRGB(-y + ax, x + bx, 180);
-							}
-							catch(ArrayIndexOutOfBoundsException e){
-
-							}
-							try{
-								origimg.setRGB(-x + ax, -y + bx, 180);
-							}
-							catch(ArrayIndexOutOfBoundsException e){
-
-							}
-							try{
-								origimg.setRGB(-y + ax, -x + bx,180);
-							}
-							catch(ArrayIndexOutOfBoundsException e){
-
-							}
-							try{
-								origimg.setRGB(x + ax, -y + bx, 180);
-							}
-							catch(ArrayIndexOutOfBoundsException e){
-
-							}
-							try{
-								origimg.setRGB(y + ax, -x + bx,180);
-							}
-							catch(ArrayIndexOutOfBoundsException e){
-
-							}
-							y++;
-							if (radiusError<0){
-								radiusError += 2 * y + 1;
-							}
-							else{
-								x--;
-								radiusError += 2 * (y - x + 1);
-							}
+						//draw circle
+						if (r>1){
+							Graphics2D g = origimg.createGraphics();
+							g.setColor(Color.RED);
+							g.drawOval(maxax, maxbx, 2*r, 2*r);
 						}
 					}
 				}
