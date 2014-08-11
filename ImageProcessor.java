@@ -174,6 +174,7 @@ public class ImageProcessor{
 				magnitude[x][y] = (int) Math.sqrt(Math.pow(Gx[x][y], 2) + Math.pow(Gx[x][y], 2));
 				if (magnitude[x][y] > maxmagnitude){
 					maxmagnitude = magnitude[x][y];
+					
 				}
 			}
 		}
@@ -366,7 +367,7 @@ public class ImageProcessor{
 
 	@args img The image to be processed
 	*/
-	public BufferedImage CircleHough(BufferedImage img, BufferedImage origimg){
+	public BufferedImage[] CircleHough(BufferedImage img, BufferedImage origimg){
 		int w = img.getWidth();
 		int h = img.getHeight();
 
@@ -388,7 +389,7 @@ public class ImageProcessor{
 				}
 			}
 		}
-		//calculating degrees-radiauns lookup table
+		//calculating degrees-radians lookup table
 		double[] radlookup = new double[360];
 		for (int theta=0; theta<360; ++theta){
 			radlookup[theta] = (theta * Math.PI) / 180;
@@ -396,6 +397,7 @@ public class ImageProcessor{
 		int maxvote = 0;
 		int votes = 0;
 		int threshold = -16000000;
+	
 		/*
 
 		voting
@@ -405,81 +407,17 @@ public class ImageProcessor{
 		int a, b = 0;
 		System.err.println("Voting!");
 		int maxradius = 0;
+		int minradius = 0;
 
-		//spliting picture into four quadrants to be handled by
-		//different threads
-		Object pixelsLock = new Object();
-		Object accumalatorLock = new Object();
-		Object radlookupLock = new Object();
-		int xmid = (int)Math.ceil(w/2.0);
-		int ymid = (int)Math.ceil(h/2.0);
-		/*Thread one = new Thread(){
-			public void run(){
-				try{
-					for (int x=0; x<xmid; ++x){
-						for (int y=0; y<ymid; ++y){
-							synchronized(pixelsLock){
-								if (pixels[x][y] < threshold){
-									pixels[x][y] = -16777216; //make it equal to background
-								}
-							}
-							pixelsLock.wait();
-							if (pixels[x][y] != -16777216){
-								pixelsLock.notifyAll();
-								for (int theta=0; theta<360; ++theta){
-									for (int r=0; r<rmax; ++r){
-										synchronized(radlookupLock){
-											radian = radlookup[theta];//(theta * Math.PI) / 180;	
-										}
-										a = (int)Math.round(x - r * Math.cos(radian));
-										b = (int)Math.round(y - r * Math.sin(radian));
-										if (a > 0 && a < w && b > 0 && b < h){ //if center is in picture
-											//doing the actual vote
-											accumulator[r][a][b] += 1;
-											++votes;
-											if (accumulator[r][a][b] > maxvote){
-												maxvote = accumulator[r][a][b];
-											}
-											if (r > maxradius){
-												maxradius = r;
-											}
-										}
-									}
-								}
-							}		
-						}
-					}
-				}catch(InterruptedException e){
-					e.printStackTrace();
-				}
-			}
-		};
-		Thread two = new Thread(){
-			public void run(){
-
-			}
-		};
-		Thread three = new Thread(){
-			public void run(){
-
-			}
-		};
-		Thread four = new Thread(){
-			public void run(){
-
-			}
-		};*/
 		for (int y=0; y<h; ++y){	
 			for (int x=0; x<w; ++x){
-				//System.out.print("["+(pixels[x][y])+"]");
-				//if ((pixels[x][y] & 0xff) == 255) {
 				if (pixels[x][y] < threshold){
 					pixels[x][y] = -16777216; //make it equal to background
 				}
 				if (pixels[x][y] != -16777216){
 					//System.out.print("0");
-					for (int theta=0; theta<360; ++theta){
-						for (int r=0; r<rmax; ++r){
+					for (int r=0; r<rmax; ++r){
+						for (int theta=0; theta<360; ++theta){
 							radian = radlookup[theta];//(theta * Math.PI) / 180;
 							a = (int)Math.round(x - r * Math.cos(radian));
 							b = (int)Math.round(y - r * Math.sin(radian));
@@ -490,8 +428,11 @@ public class ImageProcessor{
 								if (accumulator[r][a][b] > maxvote){
 									maxvote = accumulator[r][a][b];
 								}
-								if (r > maxradius){
+								if (r >= maxradius){
 									maxradius = r;
+								}
+								else if (r < minradius){
+									minradius = r;
 								}
 							}
 						}
@@ -506,80 +447,221 @@ public class ImageProcessor{
 		System.err.println("Drawing lines!");
 
 
-		int thresholdx = maxvote/2;
+		//drawing hough transform
+		BufferedImage houghimg = new BufferedImage(w,h, BufferedImage.TYPE_INT_RGB);
+
+		//processing individual pixels on hough space
+		int neighbourhood = (int) (rmax/ 2.5);
+		int thresholdx = maxvote-5;
 		for (int ax=0; ax<w; ++ax){
 			for (int bx=0; bx<h; ++bx){
-				for (int r=0; r<maxradius; ++r){
-					if (accumulator[r][ax][bx] >= thresholdx){
+				for (int r=0; r<rmax; ++r){
+
+					int pixelval =  (int)((accumulator[r][ax][bx] / (double)maxvote) * 255); //normalizing value it's going to be turn into an image
+					int rgb = 0xff000000 | (pixelval << 16 | pixelval << 8 | pixelval);
+					houghimg.setRGB(ax,bx, rgb);
+
+					if (accumulator[r][ax][bx] > thresholdx){
 						
-						//comparing pixel with Von Neuman neighbours
+						//comparing pixel with neighbours
 						int maxax = ax;
 						int maxbx = bx;
-						try{
-							if (accumulator[r][ax+1][bx] > accumulator[r][maxax][maxbx]){
-								maxax = ax+1;
-								maxbx = bx;
-							}
-						}catch(Exception e){}
-						try{
-							if (accumulator[r][ax][bx+1] > accumulator[r][maxax][maxbx]){
-								maxax = ax;
-								maxbx = bx+1;
-							}
-						}catch(Exception e){}
-						try{
-							if (accumulator[r][ax-1][bx] > accumulator[r][maxax][maxbx]){
-								maxax = ax-1;
-								maxbx = bx;
-							}
-						}catch(Exception e){}
-						try{
-							if (accumulator[r][ax][bx-1] > accumulator[r][maxax][maxbx]){
-								maxax = ax;
-								maxbx = bx-1;
-							}
-						}catch(Exception e){}
-						try{
-							if (accumulator[r][ax-1][bx-1] > accumulator[r][maxax][maxbx]){
-								maxax = ax-1;
-								maxbx = bx-1;
-							}
-						}catch(Exception e){}
-						try{
-							if (accumulator[r][ax+1][bx+1] > accumulator[r][maxax][maxbx]){
-								maxax = ax+1;
-								maxbx = bx+1;
-							}
-						}catch(Exception e){}
-						try{
-							if (accumulator[r][ax+1][bx-1] > accumulator[r][maxax][maxbx]){
-								maxax = ax+1;
-								maxbx = bx-1;
-							}
-						}catch(Exception e){}
-						try{
-							if (accumulator[r][ax-1][bx+1] > accumulator[r][maxax][maxbx]){
-								maxax = ax-1;
-								maxbx = bx+1;
-							}
-						}catch(Exception e){}
-
-
-						//draw circle
-						if (r>1){
-							for (int theta=0; theta<360; ++theta){
-								double radiancircle = radlookup[theta];
-								Graphics2D g = origimg.createGraphics();
-								//g.setColor(Color.RED);
-								//g.drawOval((int) (maxax+r*Math.cos(radiancircle)), (int) (maxbx+r*Math.sin(radiancircle)), 2*r, 2*r);
-								try{
-								origimg.setRGB((int) (maxax+r*Math.cos(radiancircle)), (int) (maxbx+r*Math.sin(radiancircle)), 128);	}catch(ArrayIndexOutOfBoundsException l){}
+						//System.err.println("a: "+ax+", b:"+bx);
+						for (int i=1; i<neighbourhood; ++i){
+							//same plane
+							try{
+								if (accumulator[r][ax+i][bx] > accumulator[r][maxax][maxbx]){
+									maxax = ax+i;
+									maxbx = bx;
 								}
+							}catch(Exception e){}
+							try{
+								if (accumulator[r][ax][bx+i] > accumulator[r][maxax][maxbx]){
+									maxax = ax;
+									maxbx = bx+i;
+								}
+							}catch(Exception e){}
+							try{
+								if (accumulator[r][ax-i][bx] > accumulator[r][maxax][maxbx]){
+									maxax = ax-i;
+									maxbx = bx;
+								}
+							}catch(Exception e){}
+							try{
+								if (accumulator[r][ax][bx-i] > accumulator[r][maxax][maxbx]){
+									maxax = ax;
+									maxbx = bx-i;
+								}
+							}catch(Exception e){}
+							try{
+								if (accumulator[r][ax-i][bx-i] > accumulator[r][maxax][maxbx]){
+									maxax = ax-i;
+									maxbx = bx-i;
+								}
+							}catch(Exception e){}
+							try{
+								if (accumulator[r][ax+i][bx+i] > accumulator[r][maxax][maxbx]){
+									maxax = ax+i;
+									maxbx = bx+i;
+								}
+							}catch(Exception e){}
+							try{
+								if (accumulator[r][ax+i][bx-i] > accumulator[r][maxax][maxbx]){
+									maxax = ax+i;
+									maxbx = bx-i;
+								}
+							}catch(Exception e){}
+							try{
+								if (accumulator[r][ax-i][bx+i] > accumulator[r][maxax][maxbx]){
+									maxax = ax-i;
+									maxbx = bx+i;
+								}
+							}catch(Exception e){}
+
+							//----------------------------------------------------------------------
+							if (r-i > 0){
+								try{
+									if (accumulator[r-i][ax+i][bx] > accumulator[r][maxax][maxbx]){
+										maxax = ax+i;
+										maxbx = bx;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r-i][ax][bx+i] > accumulator[r][maxax][maxbx]){
+										maxax = ax;
+										maxbx = bx+i;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r-i][ax-i][bx] > accumulator[r][maxax][maxbx]){
+										maxax = ax-i;
+										maxbx = bx;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r-i][ax][bx-i] > accumulator[r][maxax][maxbx]){
+										maxax = ax;
+										maxbx = bx-i;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r-i][ax-i][bx-i] > accumulator[r][maxax][maxbx]){
+										maxax = ax-i;
+										maxbx = bx-i;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r-i][ax+i][bx+i] > accumulator[r][maxax][maxbx]){
+										maxax = ax+i;
+										maxbx = bx+i;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r-i][ax+i][bx-i] > accumulator[r][maxax][maxbx]){
+										maxax = ax+i;
+										maxbx = bx-i;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r-i][ax-i][bx+i] > accumulator[r][maxax][maxbx]){
+										maxax = ax-i;
+										maxbx = bx+i;
+									}
+								}catch(Exception e){}
+							}
+							//--------------------------------------------------------------------------
+							if (r+i <= maxradius){
+								try{
+									if (accumulator[r+1][ax+i][bx] > accumulator[r][maxax][maxbx]){
+										maxax = ax+i;
+										maxbx = bx;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r+1][ax][bx+i] > accumulator[r][maxax][maxbx]){
+										maxax = ax;
+										maxbx = bx+i;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r+1][ax-i][bx] > accumulator[r][maxax][maxbx]){
+										maxax = ax-i;
+										maxbx = bx;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r+1][ax][bx-i] > accumulator[r][maxax][maxbx]){
+										maxax = ax;
+										maxbx = bx-i;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r+1][ax-i][bx-i] > accumulator[r][maxax][maxbx]){
+										maxax = ax-i;
+										maxbx = bx-i;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r+1][ax+i][bx+i] > accumulator[r][maxax][maxbx]){
+										maxax = ax+i;
+										maxbx = bx+i;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r+1][ax+i][bx-i] > accumulator[r][maxax][maxbx]){
+										maxax = ax+i;
+										maxbx = bx-i;
+									}
+								}catch(Exception e){}
+								try{
+									if (accumulator[r+1][ax-i][bx+i] > accumulator[r][maxax][maxbx]){
+										maxax = ax-i;
+										maxbx = bx+i;
+									}
+								}catch(Exception e){}
+							}
 						}
+						//draw circle
+						drawCircle(maxax, maxbx, r, origimg);
 					}
 				}
 			}
 		}
-		return origimg;
+		//printing the report
+		System.err.println("Number of votes: "+votes);
+
+		BufferedImage[] imgs = {origimg, houghimg};
+		return imgs;
+	}
+	public void drawCircle(int x0, int y0, int radius, BufferedImage img){
+		  int x = radius, y = 0;
+		  int radiusError = 1-x;
+		 
+		  while(x >= y)
+		  {
+		    DrawPixel(x + x0, y + y0, img);
+		    DrawPixel(y + x0, x + y0, img);
+		    DrawPixel(-x + x0, y + y0, img);
+		    DrawPixel(-y + x0, x + y0, img);
+		    DrawPixel(-x + x0, -y + y0, img);
+		    DrawPixel(-y + x0, -x + y0,img);
+		    DrawPixel(x + x0, -y + y0,img);
+		    DrawPixel(y + x0, -x + y0,img);
+		    y++;
+		    if (radiusError<0)
+		    {
+		      radiusError += 2 * y + 1;
+		    }
+		    else
+		    {
+		      x--;
+		      radiusError += 2 * (y - x + 1);
+		    }
+		  }
+	}
+	public void DrawPixel(int x, int y, BufferedImage img){
+		try{
+			img.setRGB(x, y, 100);
+		}catch(ArrayIndexOutOfBoundsException e){}
 	}
 }

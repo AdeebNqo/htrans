@@ -32,6 +32,7 @@ public class Driver{
 			JPanel pan2 = new JPanel(); frame.add(pan2);
 			JPanel pan3 = new JPanel(); frame.add(pan3);
 			JPanel pan4 = new JPanel(); frame.add(pan4);
+			JPanel pan5 = new JPanel(); frame.add(pan5);
 
 			frame.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
 
@@ -40,8 +41,8 @@ public class Driver{
 			BufferedImage img1 = ImageIO.read(img0);
 			ImageProcessor imgprocessor = new ImageProcessor();
 
-			int gaussernelsize = 5;
-			int gausssigma = 5;
+			int gaussernelsize = 10;
+			int gausssigma = 1;
 
 			//original
 			JLabel picLabel1 = new JLabel(new ImageIcon(img1));
@@ -63,10 +64,14 @@ public class Driver{
 			BufferedImage sobelimg = imgprocessor.SobelOperator(gaussimg, ImageProcessor.PERIODIC);
 			JLabel picLabel3 = new JLabel(new ImageIcon(sobelimg));
 			pan3.add(picLabel3);
-			//original
-			BufferedImage houghimg = imgprocessor.CircleHough(sobelimg , ImageIO.read(img0));
-			JLabel picLabel4 = new JLabel(new ImageIcon(houghimg));
+			
+			BufferedImage[] houghresponse = imgprocessor.CircleHough(sobelimg , ImageIO.read(img0));
+			//hough transform
+			JLabel picLabel4 = new JLabel(new ImageIcon(houghresponse[1]));
 			pan4.add(picLabel4);
+			//final			
+			JLabel picLabel5 = new JLabel(new ImageIcon(houghresponse[0]));
+			pan5.add(picLabel5);
 
 			frame.pack();
 			frame.setVisible(true);
