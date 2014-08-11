@@ -37,15 +37,24 @@ public class Driver{
 
 
 			File img0 = new File(args[0]);
-			BufferedImage img = ImageIO.read(img0);
+			BufferedImage img1 = ImageIO.read(img0);
 			ImageProcessor imgprocessor = new ImageProcessor();
 
-			int gaussernelsize = 2;
-			int gausssigma = 3;
+			int gaussernelsize = 5;
+			int gausssigma = 5;
 
 			//original
-			JLabel picLabel1 = new JLabel(new ImageIcon(img));
+			JLabel picLabel1 = new JLabel(new ImageIcon(img1));
 			pan1.add(picLabel1);
+			//grey convert img to greyscale
+			int width = img1.getWidth();
+			int height = img1.getHeight();
+			BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
+			for (int i=0; i<width; ++i){
+				for (int j=0; j<height; ++j){
+					img.setRGB(i,j,img1.getRGB(i,j));
+				}
+			}
 			//gaussian blur
 			BufferedImage gaussimg = imgprocessor.GaussianBlur(img , gaussernelsize, gausssigma, ImageProcessor.PERIODIC);
 			JLabel picLabel2 = new JLabel(new ImageIcon(gaussimg));

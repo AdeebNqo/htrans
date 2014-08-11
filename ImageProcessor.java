@@ -388,7 +388,11 @@ public class ImageProcessor{
 				}
 			}
 		}
-
+		//calculating degrees-radiauns lookup table
+		double[] radlookup = new double[360];
+		for (int theta=0; theta<360; ++theta){
+			radlookup[theta] = (theta * Math.PI) / 180;
+		}
 		int maxvote = 0;
 		int votes = 0;
 		int threshold = -16000000;
@@ -398,10 +402,74 @@ public class ImageProcessor{
 
 		*/
 		double radian = -1;
-		int a, b;
+		int a, b = 0;
 		System.err.println("Voting!");
 		int maxradius = 0;
-		for (int y=0; y<h; ++y){
+
+		//spliting picture into four quadrants to be handled by
+		//different threads
+		Object pixelsLock = new Object();
+		Object accumalatorLock = new Object();
+		Object radlookupLock = new Object();
+		int xmid = (int)Math.ceil(w/2.0);
+		int ymid = (int)Math.ceil(h/2.0);
+		/*Thread one = new Thread(){
+			public void run(){
+				try{
+					for (int x=0; x<xmid; ++x){
+						for (int y=0; y<ymid; ++y){
+							synchronized(pixelsLock){
+								if (pixels[x][y] < threshold){
+									pixels[x][y] = -16777216; //make it equal to background
+								}
+							}
+							pixelsLock.wait();
+							if (pixels[x][y] != -16777216){
+								pixelsLock.notifyAll();
+								for (int theta=0; theta<360; ++theta){
+									for (int r=0; r<rmax; ++r){
+										synchronized(radlookupLock){
+											radian = radlookup[theta];//(theta * Math.PI) / 180;	
+										}
+										a = (int)Math.round(x - r * Math.cos(radian));
+										b = (int)Math.round(y - r * Math.sin(radian));
+										if (a > 0 && a < w && b > 0 && b < h){ //if center is in picture
+											//doing the actual vote
+											accumulator[r][a][b] += 1;
+											++votes;
+											if (accumulator[r][a][b] > maxvote){
+												maxvote = accumulator[r][a][b];
+											}
+											if (r > maxradius){
+												maxradius = r;
+											}
+										}
+									}
+								}
+							}		
+						}
+					}
+				}catch(InterruptedException e){
+					e.printStackTrace();
+				}
+			}
+		};
+		Thread two = new Thread(){
+			public void run(){
+
+			}
+		};
+		Thread three = new Thread(){
+			public void run(){
+
+			}
+		};
+		Thread four = new Thread(){
+			public void run(){
+
+			}
+		};*/
+		for (int y=0; y<h; ++y){	
 			for (int x=0; x<w; ++x){
 				//System.out.print("["+(pixels[x][y])+"]");
 				//if ((pixels[x][y] & 0xff) == 255) {
@@ -412,7 +480,7 @@ public class ImageProcessor{
 					//System.out.print("0");
 					for (int theta=0; theta<360; ++theta){
 						for (int r=0; r<rmax; ++r){
-							radian = (theta * Math.PI) / 180;
+							radian = radlookup[theta];//(theta * Math.PI) / 180;
 							a = (int)Math.round(x - r * Math.cos(radian));
 							b = (int)Math.round(y - r * Math.sin(radian));
 							if (a > 0 && a < w && b > 0 && b < h){ //if center is in picture
@@ -436,26 +504,14 @@ public class ImageProcessor{
 		}
 		System.err.println();
 		System.err.println("Drawing lines!");
-		System.err.println("max radius is "+maxradius+", rmax: "+rmax);
 
-		//int numcircles = 10;
-		//int[] circlevals = new int[numcircles*30];
 
-		int thresholdx = 10;//maxvote;
+		int thresholdx = maxvote/2;
 		for (int ax=0; ax<w; ++ax){
 			for (int bx=0; bx<h; ++bx){
-				for (int r=maxradius; r>=0; --r){
+				for (int r=0; r<maxradius; ++r){
 					if (accumulator[r][ax][bx] >= thresholdx){
-						/*
-						for (int x=0; x<w; ++x){
-							for(int y=0; y<h; ++y){
-								if (Math.pow(x-ax, 2)+Math.pow(y-bx, 2) == Math.pow(r, 2)){
-									//System.err.println("("+x+"-"+ax+")^2+("+y+"-"+bx+")^2="+r+"^2");
-									origimg.setRGB(x, y, 255);
-								}
-							}
-						}*/
-
+						
 						//comparing pixel with Von Neuman neighbours
 						int maxax = ax;
 						int maxbx = bx;
@@ -483,12 +539,42 @@ public class ImageProcessor{
 								maxbx = bx-1;
 							}
 						}catch(Exception e){}
+						try{
+							if (accumulator[r][ax-1][bx-1] > accumulator[r][maxax][maxbx]){
+								maxax = ax-1;
+								maxbx = bx-1;
+							}
+						}catch(Exception e){}
+						try{
+							if (accumulator[r][ax+1][bx+1] > accumulator[r][maxax][maxbx]){
+								maxax = ax+1;
+								maxbx = bx+1;
+							}
+						}catch(Exception e){}
+						try{
+							if (accumulator[r][ax+1][bx-1] > accumulator[r][maxax][maxbx]){
+								maxax = ax+1;
+								maxbx = bx-1;
+							}
+						}catch(Exception e){}
+						try{
+							if (accumulator[r][ax-1][bx+1] > accumulator[r][maxax][maxbx]){
+								maxax = ax-1;
+								maxbx = bx+1;
+							}
+						}catch(Exception e){}
+
 
 						//draw circle
 						if (r>1){
-							Graphics2D g = origimg.createGraphics();
-							g.setColor(Color.RED);
-							g.drawOval(maxax, maxbx, 2*r, 2*r);
+							for (int theta=0; theta<360; ++theta){
+								double radiancircle = radlookup[theta];
+								Graphics2D g = origimg.createGraphics();
+								//g.setColor(Color.RED);
+								//g.drawOval((int) (maxax+r*Math.cos(radiancircle)), (int) (maxbx+r*Math.sin(radiancircle)), 2*r, 2*r);
+								try{
+								origimg.setRGB((int) (maxax+r*Math.cos(radiancircle)), (int) (maxbx+r*Math.sin(radiancircle)), 128);	}catch(ArrayIndexOutOfBoundsException l){}
+								}
 						}
 					}
 				}
